@@ -23,10 +23,15 @@ int term();
 #define LOGIC 1
 #define ARITH 2
 #define EQUAL 3
-#define PAREN 4
+#define PAREN 4 // 소괄호
+#define BRACE 5 // 중괄호
+#define ALPHA 6 // 알파벳 소문자
+#define COLON 7
 #define UNKNOWN 99
 // 어휘 1개의 의미
 #define INT_LIT 10
+#define CHAR_LIT 11
+#define TYPE_LIT 12
 #define ADD_OP 21
 #define SUB_OP 22
 #define MULT_OP 23
@@ -39,6 +44,9 @@ int term();
 #define LESS_OP 30
 #define GREATER_EQUAL_OP 31
 #define LESS_EQUAL_OP 32
+#define LEFT_BRACE 33
+#define RIGHT_BRACE 34
+#define SEMI_COLON 35
 #define UNKNOWN_OP 98
 
 // syntx analysis
@@ -58,31 +66,42 @@ int idx;
 LEXEME lexemes[1000];
 string inputStr;
 int inputIdx;
+int value[26];
 
 int number()
 {
-    //cout<<"enter number\n";
+    // cout<<"enter number\n";
     if (lexemes[idx].type == INT_LIT)
         return stoi(lexemes[idx++].data);
     else
         throw runtime_error("syntax error!!");
 }
 
-int term()//number 또는 변수를 return하게 고쳐야 함
+int var() // 변수명이 "int"일때 예외처리 해야될듯
 {
-    //cout<<"enter number\n";
-    return number();
+    if (lexemes[idx].type == CHAR_LIT)
+        return value[lexemes[idx++].data[0] - 'a'];
+    else
+        throw runtime_error("syntax error!!");
+}
+
+int term() // number 또는 변수를 return하게 고쳐야 함
+{
+    // cout<<"enter number\n";
+    if (lexemes[idx].type == INT_LIT)
+        return number();
+    return var();
 }
 
 int aexpr()
 {
-    //cout<<"enter aexpr\n";
+    // cout<<"enter aexpr\n";
     int l = term();
     while (1)
     {
         if (lexemes[idx].type == ADD_OP || lexemes[idx].type == SUB_OP)
         {
-            int tmp=lexemes[idx].type;
+            int tmp = lexemes[idx].type;
             idx++;
             int r = term();
             if (tmp == ADD_OP)
@@ -98,48 +117,31 @@ int aexpr()
 
 int bexpr()
 {
-    //cout<<"enter bexpr\n";
+    // cout<<"enter bexpr\n";
     int l = aexpr();
-    if (lexemes[idx].type>=EQUAL_OP&&lexemes[idx].type<=LESS_EQUAL_OP)
+    if (lexemes[idx].type >= EQUAL_OP && lexemes[idx].type <= LESS_EQUAL_OP)
     {
-        int tmp=lexemes[idx].type;
+        int tmp = lexemes[idx].type;
         idx++;
-        isBinary=true;
-        int r=aexpr();
-        switch(tmp)
+        isBinary = true;
+        int r = aexpr();
+        switch (tmp)
         {
-            case EQUAL_OP:
-                return l==r;
-            case NOT_EQUAL_OP:
-                return l!=r;
-            case GREATER_OP:
-                return l>r;
-            case LESS_OP:
-                return l<r;
-            case GREATER_EQUAL_OP:
-                return l>=r;
-            case LESS_EQUAL_OP:
-                return l<=r;
+        case EQUAL_OP:
+            return l == r;
+        case NOT_EQUAL_OP:
+            return l != r;
+        case GREATER_OP:
+            return l > r;
+        case LESS_OP:
+            return l < r;
+        case GREATER_EQUAL_OP:
+            return l >= r;
+        case LESS_EQUAL_OP:
+            return l <= r;
         }
     }
-    return l;
-}
-
-string expr()
-{
-    //cout<<"enter expr\n";
-    isBinary = false;
-    idx = 0;
-    int res = bexpr();
-    if (isBinary)
-    {
-        if (res)
-            return "true";
-        else
-            return "false";
-    }
-    else
-        return to_string(res);
+    throw runtime_error("syntax error!!");
 }
 
 void input()
@@ -147,8 +149,8 @@ void input()
     int i = 0;
     cout << ">> ";
     getline(cin, inputStr);
-    inputStr+='\n';
-    inputIdx=0;
+    inputStr += '\n';
+    inputIdx = 0;
     getChar();
     do
     {
@@ -159,25 +161,65 @@ void input()
     } while (nextToken != EOF && nextToken != UNKNOWN_OP);
 }
 
+void statement()
+{
+    if(lexemes[idx].data=="print")
+    {
+        idx++;
+        int ret=aexpr();
+        cout<<">> "<<ret<<'\n';
+    }
+    else if(lexemes[idx].data=="while")
+    {
+        idx++;
+        if(lexemes[idx++].type!=LEFT_PAREN)
+            throw runtime_error("syntax error!!");
+        while(bexpr())
+        {
+            if(lexemes[idx++].type!=RIGHT_PAREN)
+                throw runtime_error("syntax error!!");
+            if(lexemes[idx++].type!=LEFT_BRACE)
+                throw runtime_error("syntax error!!");
+            while (lexemes[idx].type != RIGHT_BRACE)
+            {
+                statement();
+            }
+            idx++;
+        }
+        while(lexemes[idx].type!=RIGHT_BRACE)
+        {
+            if(lexemes[idx].type==EOF)
+                throw runtime_error("syntax error!!");
+            idx++;
+        }
+        idx++;
+    }
+    else if(lexemes[idx].data.size()==1&&islower(lexemes[idx].data[0]))
+    {
+        int tmp=lexemes[idx++].data[0];
+        value[tmp - 'a']=aexpr();
+    }
+    else
+        throw runtime_error("syntax error!!");
+}
+
 int main()
 {
     while (1)
     {
         input();
-        // int i=0;
-        // while(lexemes[i].type!=EOF&&lexemes[i].type!=UNKNOWN_OP)
-        // {
-        //     cout<<"type: "<<lexemes[i].type<<"   data: "<<lexemes[i].data<<'\n';
-        //     i++;
-        // }
         if (lexemes[0].type == EOF)
             break;
         try
         {
-            string res = expr();
-            if(lexemes[idx].type!=EOF)
-                throw runtime_error("syntax error!!");
-            cout << ">> " << res << '\n';
+            while (lexemes[idx].type != EOF)
+            {
+                if (lexemes[idx].type != CHAR_LIT)
+                    throw runtime_error("syntax error!!");
+                statement();
+                    if (lexemes[idx].type != EOF && lexemes[idx].type != SEMI_COLON)
+                        throw runtime_error("syntax error!!");
+            }
         }
         catch (runtime_error e)
         {
@@ -204,6 +246,8 @@ void getChar()
     {
         if (isdigit(nextChar))
             charClass = DIGIT;
+        else if (islower(nextChar))
+            charClass = ALPHA;
         else if (nextChar == '=')
             charClass = EQUAL;
         else if (nextChar == '!' || nextChar == '>' || nextChar == '<')
@@ -212,6 +256,10 @@ void getChar()
             charClass = ARITH;
         else if (nextChar == '(' || nextChar == ')')
             charClass = PAREN;
+        else if (nextChar == '{' || nextChar == '}')
+            charClass = BRACE;
+        else if (nextChar == ';')
+            charClass = COLON;
         else
             charClass = UNKNOWN;
     }
@@ -245,6 +293,12 @@ int lookup()
         return LEFT_PAREN;
     if (!strcmp(lexeme, ")"))
         return RIGHT_PAREN;
+    if (!strcmp(lexeme, "{"))
+        return LEFT_BRACE;
+    if (!strcmp(lexeme, "}"))
+        return RIGHT_BRACE;
+    if (!strcmp(lexeme, ";"))
+        return SEMI_COLON;
     return UNKNOWN_OP;
 }
 
@@ -264,6 +318,19 @@ void lex()
         }
         nextToken = INT_LIT;
         break;
+    case ALPHA:
+        addChar();
+        getChar();
+        while (charClass == ALPHA)
+        {
+            addChar();
+            getChar();
+        }
+        if (!strcmp(lexeme, "int"))
+            nextToken = TYPE_LIT;
+        else
+            nextToken = CHAR_LIT;
+        break;
     case LOGIC:
     case EQUAL:
         addChar();
@@ -277,6 +344,8 @@ void lex()
         break;
     case ARITH:
     case PAREN:
+    case BRACE:
+    case COLON:
         addChar();
         getChar();
         nextToken = lookup();
