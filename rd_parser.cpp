@@ -47,6 +47,7 @@ int term();
 #define LEFT_BRACE 33
 #define RIGHT_BRACE 34
 #define SEMI_COLON 35
+#define ASSIGN_OP 36
 #define UNKNOWN_OP 98
 
 // syntx analysis
@@ -79,7 +80,7 @@ int number()
 
 int var() // 변수명이 "int"일때 예외처리 해야될듯
 {
-    if (lexemes[idx].type == CHAR_LIT)
+    if (lexemes[idx].type == CHAR_LIT&& lexemes[idx].data.size() == 1 && islower(lexemes[idx].data[0]))
         return value[lexemes[idx++].data[0] - 'a'];
     else
         throw runtime_error("syntax error!!");
@@ -161,46 +162,53 @@ void input()
     } while (nextToken != EOF && nextToken != UNKNOWN_OP);
 }
 
-void statement()
+int statement()
 {
     if (lexemes[idx].type != CHAR_LIT)
-                    throw runtime_error("syntax error!!");
+        throw runtime_error("syntax error!!");
 
-    if(lexemes[idx].data=="print")
+    if (lexemes[idx].data == "print")
     {
         idx++;
-        int ret=aexpr();
-        cout<<">> "<<ret<<'\n';
+        int ret = aexpr();
+        cout << ">> " << ret << '\n';
+        return 0;
     }
-    else if(lexemes[idx].data=="while")
+    else if (lexemes[idx].data == "while")
     {
         idx++;
-        if(lexemes[idx++].type!=LEFT_PAREN)
+        if (lexemes[idx++].type != LEFT_PAREN)
             throw runtime_error("syntax error!!");
-        while(bexpr())
+        int tmp = idx;
+        while (bexpr())
         {
-            if(lexemes[idx++].type!=RIGHT_PAREN)
+            if (lexemes[idx++].type != RIGHT_PAREN)
                 throw runtime_error("syntax error!!");
-            if(lexemes[idx++].type!=LEFT_BRACE)
+            if (lexemes[idx++].type != LEFT_BRACE)
                 throw runtime_error("syntax error!!");
             while (lexemes[idx].type != RIGHT_BRACE)
             {
-                statement();
+                int stype=statement();
+                if ((!stype&&lexemes[idx++].type != SEMI_COLON)|| (stype && lexemes[idx++].type != RIGHT_BRACE))
+                    throw runtime_error("syntax error!!");
             }
-            idx++;
+            idx = tmp;
         }
-        while(lexemes[idx].type!=RIGHT_BRACE)
+        while (lexemes[idx].type != RIGHT_BRACE)
         {
-            if(lexemes[idx].type==EOF)
+            if (lexemes[idx].type == EOF)
                 throw runtime_error("syntax error!!");
             idx++;
         }
-        idx++;
+        return 1;
     }
-    else if(lexemes[idx].data.size()==1&&islower(lexemes[idx].data[0]))
+    else if (lexemes[idx].data.size() == 1 && islower(lexemes[idx].data[0]))
     {
-        int tmp=lexemes[idx++].data[0];
-        value[tmp - 'a']=aexpr();
+        int tmp = lexemes[idx++].data[0];
+        if(lexemes[idx++].type!=ASSIGN_OP)
+            throw runtime_error("syntax error!!");
+        value[tmp - 'a'] = aexpr();
+        return 0;
     }
     else
         throw runtime_error("syntax error!!");
@@ -211,23 +219,25 @@ int main()
     while (1)
     {
         input();
+        idx = 0;
+        memset(value, 0, sizeof(value));
         if (lexemes[0].type == EOF)
             break;
         try
         {
-            while(lexemes[idx].type != EOF&&lexemes[idx].type == TYPE_LIT)
+            while (lexemes[idx].type == TYPE_LIT)
             {
                 idx++;
                 var();//딱히 해줄거 없음 인덱스 증가만 시켜주고 예외처리만 해주면됨.
                 if (lexemes[idx++].type != SEMI_COLON)
-                        throw runtime_error("syntax error!!");
+                    throw runtime_error("syntax error!!");
                 //예외처리 말고 딱히 해줄거 없는듯?
             }
             while (lexemes[idx].type != EOF)
             {
-                statement();
-                    if (lexemes[idx++].type != SEMI_COLON)
-                        throw runtime_error("syntax error!!");
+                int stype=statement();
+                if ((!stype && lexemes[idx++].type != SEMI_COLON) || (stype && lexemes[idx++].type != RIGHT_BRACE))
+                    throw runtime_error("syntax error!!");
             }
         }
         catch (runtime_error e)
@@ -286,6 +296,8 @@ int lookup()
         return DIV_OP;
     if (!strcmp(lexeme, "*"))
         return MULT_OP;
+    if (!strcmp(lexeme, "="))
+        return ASSIGN_OP;
     if (!strcmp(lexeme, "=="))
         return EQUAL_OP;
     if (!strcmp(lexeme, "!="))
