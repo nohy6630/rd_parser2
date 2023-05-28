@@ -163,6 +163,9 @@ void input()
 
 void statement()
 {
+    if (lexemes[idx].type != CHAR_LIT)
+                    throw runtime_error("syntax error!!");
+
     if(lexemes[idx].data=="print")
     {
         idx++;
@@ -212,12 +215,18 @@ int main()
             break;
         try
         {
+            while(lexemes[idx].type != EOF&&lexemes[idx].type == TYPE_LIT)
+            {
+                idx++;
+                var();//딱히 해줄거 없음 인덱스 증가만 시켜주고 예외처리만 해주면됨.
+                if (lexemes[idx++].type != SEMI_COLON)
+                        throw runtime_error("syntax error!!");
+                //예외처리 말고 딱히 해줄거 없는듯?
+            }
             while (lexemes[idx].type != EOF)
             {
-                if (lexemes[idx].type != CHAR_LIT)
-                    throw runtime_error("syntax error!!");
                 statement();
-                    if (lexemes[idx].type != EOF && lexemes[idx].type != SEMI_COLON)
+                    if (lexemes[idx++].type != SEMI_COLON)
                         throw runtime_error("syntax error!!");
             }
         }
