@@ -165,7 +165,10 @@ void input()
 int statement()
 {
     if (lexemes[idx].type != CHAR_LIT)
+    {
+        cout<<lexemes[idx].data;
         throw runtime_error("syntax error!!");
+    }
 
     if (lexemes[idx].data == "print")
     {
@@ -182,6 +185,7 @@ int statement()
         int tmp = idx;
         while (bexpr())
         {
+            //cout<<"while start\n";
             if (lexemes[idx++].type != RIGHT_PAREN)
                 throw runtime_error("syntax error!!");
             if (lexemes[idx++].type != LEFT_BRACE)
@@ -189,17 +193,31 @@ int statement()
             while (lexemes[idx].type != RIGHT_BRACE)
             {
                 int stype=statement();
+                //cout<<"in "<<idx<<":"<<lexemes[idx].data<<'\n';
                 if ((!stype&&lexemes[idx++].type != SEMI_COLON)|| (stype && lexemes[idx++].type != RIGHT_BRACE))
                     throw runtime_error("syntax error!!");
             }
             idx = tmp;
+            //cout<<"while end\n";
         }
-        while (lexemes[idx].type != RIGHT_BRACE)
+        int chk=0;
+                //cout<<"chk "<<idx<<":"<<lexemes[idx].data<<'\n';
+        if (lexemes[idx++].type != RIGHT_PAREN)
+                throw runtime_error("syntax error!!");
+            if (lexemes[idx++].type != LEFT_BRACE)
+                throw runtime_error("syntax error!!");
+        while (chk!=1)
         {
+                //cout<<"chk "<<idx<<":"<<lexemes[idx].data<<'\n';
             if (lexemes[idx].type == EOF)
                 throw runtime_error("syntax error!!");
+            if(lexemes[idx].type == RIGHT_BRACE)
+                chk++;
+            if(lexemes[idx].type == LEFT_BRACE)
+                chk--;
             idx++;
         }
+        idx--;
         return 1;
     }
     else if (lexemes[idx].data.size() == 1 && islower(lexemes[idx].data[0]))
@@ -236,6 +254,7 @@ int main()
             while (lexemes[idx].type != EOF)
             {
                 int stype=statement();
+                //cout<<idx<<":"<<lexemes[idx].data<<'\n';
                 if ((!stype && lexemes[idx++].type != SEMI_COLON) || (stype && lexemes[idx++].type != RIGHT_BRACE))
                     throw runtime_error("syntax error!!");
             }
@@ -384,3 +403,16 @@ void lex()
         nextToken = EOF;
     }
 }
+
+/*
+while(i<5){j=0;while(j<5){j=j+1;k=0;while(k<5){print i;k=k+1;}}i=i+1;}
+
+while(a<-2){good}
+
+while(i<5){i=i+1;}
+
+
+음수넣으면 오류남
+오류 도중에 하나라도 나면 다른 print도 되면 안됨
+while문에 들어가지 않아도 while문 안에 문법체킹해야됨
+*/
