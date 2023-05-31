@@ -66,6 +66,7 @@ bool isBinary;
 int idx;
 LEXEME lexemes[1000];
 string inputStr;
+string printStr;
 int inputIdx;
 int value[26];
 
@@ -80,7 +81,7 @@ int number()
 
 int var() // 변수명이 "int"일때 예외처리 해야될듯
 {
-    if (lexemes[idx].type == CHAR_LIT&& lexemes[idx].data.size() == 1 && islower(lexemes[idx].data[0]))
+    if (lexemes[idx].type == CHAR_LIT && lexemes[idx].data.size() == 1 && islower(lexemes[idx].data[0]))
         return value[lexemes[idx++].data[0] - 'a'];
     else
         throw runtime_error("syntax error!!");
@@ -166,7 +167,6 @@ int statement()
 {
     if (lexemes[idx].type != CHAR_LIT)
     {
-        cout<<lexemes[idx].data;
         throw runtime_error("syntax error!!");
     }
 
@@ -174,7 +174,8 @@ int statement()
     {
         idx++;
         int ret = aexpr();
-        cout << ">> " << ret << '\n';
+        printStr += ">> " + to_string(ret)+ "\n";
+        //cout << ">> " << ret << '\n';
         return 0;
     }
     else if (lexemes[idx].data == "while")
@@ -183,7 +184,13 @@ int statement()
         if (lexemes[idx++].type != LEFT_PAREN)
             throw runtime_error("syntax error!!");
         int tmp = idx;
-        while (bexpr())
+        bool whilevalid = false;
+        int valTmp[26];
+        string strTmp;
+        for (int i = 0; i < 26; i++)
+            valTmp[i] = value[i];
+        strTmp = printStr;
+        while (bexpr()||!whilevalid)
         {
             //cout<<"while start\n";
             if (lexemes[idx++].type != RIGHT_PAREN)
@@ -192,28 +199,35 @@ int statement()
                 throw runtime_error("syntax error!!");
             while (lexemes[idx].type != RIGHT_BRACE)
             {
-                int stype=statement();
+                int stype = statement();
                 //cout<<"in "<<idx<<":"<<lexemes[idx].data<<'\n';
-                if ((!stype&&lexemes[idx++].type != SEMI_COLON)|| (stype && lexemes[idx++].type != RIGHT_BRACE))
+                if ((!stype && lexemes[idx++].type != SEMI_COLON) || (stype && lexemes[idx++].type != RIGHT_BRACE))
                     throw runtime_error("syntax error!!");
             }
             idx = tmp;
             //cout<<"while end\n";
+            if (!whilevalid)
+            {
+                for (int i = 0; i < 26; i++)
+                    value[i] = valTmp[i];
+                printStr = strTmp;
+                whilevalid = true;
+            }
         }
-        int chk=0;
-                //cout<<"chk "<<idx<<":"<<lexemes[idx].data<<'\n';
+        int chk = 0;
+        //cout<<"chk "<<idx<<":"<<lexemes[idx].data<<'\n';
         if (lexemes[idx++].type != RIGHT_PAREN)
-                throw runtime_error("syntax error!!");
-            if (lexemes[idx++].type != LEFT_BRACE)
-                throw runtime_error("syntax error!!");
-        while (chk!=1)
+            throw runtime_error("syntax error!!");
+        if (lexemes[idx++].type != LEFT_BRACE)
+            throw runtime_error("syntax error!!");
+        while (chk != 1)
         {
-                //cout<<"chk "<<idx<<":"<<lexemes[idx].data<<'\n';
+            //cout<<"chk "<<idx<<":"<<lexemes[idx].data<<'\n';
             if (lexemes[idx].type == EOF)
                 throw runtime_error("syntax error!!");
-            if(lexemes[idx].type == RIGHT_BRACE)
+            if (lexemes[idx].type == RIGHT_BRACE)
                 chk++;
-            if(lexemes[idx].type == LEFT_BRACE)
+            if (lexemes[idx].type == LEFT_BRACE)
                 chk--;
             idx++;
         }
@@ -223,7 +237,7 @@ int statement()
     else if (lexemes[idx].data.size() == 1 && islower(lexemes[idx].data[0]))
     {
         int tmp = lexemes[idx++].data[0];
-        if(lexemes[idx++].type!=ASSIGN_OP)
+        if (lexemes[idx++].type != ASSIGN_OP)
             throw runtime_error("syntax error!!");
         value[tmp - 'a'] = aexpr();
         return 0;
@@ -237,6 +251,7 @@ int main()
     while (1)
     {
         input();
+        printStr = "";
         idx = 0;
         memset(value, 0, sizeof(value));
         if (lexemes[0].type == EOF)
@@ -253,11 +268,12 @@ int main()
             }
             while (lexemes[idx].type != EOF)
             {
-                int stype=statement();
+                int stype = statement();
                 //cout<<idx<<":"<<lexemes[idx].data<<'\n';
                 if ((!stype && lexemes[idx++].type != SEMI_COLON) || (stype && lexemes[idx++].type != RIGHT_BRACE))
                     throw runtime_error("syntax error!!");
             }
+            cout << printStr;
         }
         catch (runtime_error e)
         {
@@ -412,7 +428,6 @@ while(a<-2){good}
 while(i<5){i=i+1;}
 
 
-음수넣으면 오류남
 오류 도중에 하나라도 나면 다른 print도 되면 안됨
 while문에 들어가지 않아도 while문 안에 문법체킹해야됨
 */
