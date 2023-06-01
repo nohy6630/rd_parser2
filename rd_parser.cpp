@@ -208,8 +208,15 @@ int statement()
             //cout<<"while end\n";
             if (!whilevalid)
             {
+                bool isInfLoop = true;
                 for (int i = 0; i < 26; i++)
+                {
+                    if (value[i] != valTmp[i])
+                        isInfLoop = false;
                     value[i] = valTmp[i];
+                }
+                if (isInfLoop)
+                    throw runtime_error("this is infinity loop!!");
                 printStr = strTmp;
                 whilevalid = true;
             }
@@ -430,15 +437,3 @@ void lex()
         nextToken = EOF;
     }
 }
-
-/*
-while(i<5){j=0;while(j<5){j=j+1;k=0;while(k<5){print i;k=k+1;}}i=i+1;}
-
-while(a<-2){good}
-
-while(i<5){i=i+1;}
-
-
-오류 도중에 하나라도 나면 다른 print도 되면 안됨
-while문에 들어가지 않아도 while문 안에 문법체킹해야됨
-*/
