@@ -246,6 +246,8 @@ int statement()
         throw runtime_error("syntax error!!");
 }
 
+bool endEnter = false;
+
 int main()
 {
     while (1)
@@ -255,7 +257,16 @@ int main()
         idx = 0;
         memset(value, 0, sizeof(value));
         if (lexemes[0].type == EOF)
-            break;
+        {
+            if (!endEnter)
+            {
+                endEnter = true;
+                continue;
+            }
+            else
+                break;
+        }
+        endEnter = false;
         try
         {
             while (lexemes[idx].type == TYPE_LIT)
