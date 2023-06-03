@@ -79,7 +79,7 @@ int number()
         throw runtime_error("syntax error!!");
 }
 
-int var() // 변수명이 "int"일때 예외처리 해야될듯
+int var()
 {
     if (lexemes[idx].type == CHAR_LIT && lexemes[idx].data.size() == 1 && islower(lexemes[idx].data[0]))
         return value[lexemes[idx++].data[0] - 'a'];
@@ -87,7 +87,7 @@ int var() // 변수명이 "int"일때 예외처리 해야될듯
         throw runtime_error("syntax error!!");
 }
 
-int term() // number 또는 변수를 return하게 고쳐야 함
+int term() 
 {
     // cout<<"enter number\n";
     if (lexemes[idx].type == INT_LIT)
@@ -174,7 +174,7 @@ int statement()
     {
         idx++;
         int ret = aexpr();
-        printStr += ">> " + to_string(ret)+ "\n";
+        printStr += to_string(ret) + " ";
         //cout << ">> " << ret << '\n';
         return 0;
     }
@@ -190,7 +190,7 @@ int statement()
         for (int i = 0; i < 26; i++)
             valTmp[i] = value[i];
         strTmp = printStr;
-        while (bexpr()||!whilevalid)
+        while (bexpr() || !whilevalid)
         {
             //cout<<"while start\n";
             if (lexemes[idx++].type != RIGHT_PAREN)
@@ -291,7 +291,8 @@ int main()
                 if ((!stype && lexemes[idx++].type != SEMI_COLON) || (stype && lexemes[idx++].type != RIGHT_BRACE))
                     throw runtime_error("syntax error!!");
             }
-            cout << printStr;
+            if(printStr!="")
+                cout << ">> "<<printStr<<'\n';
         }
         catch (runtime_error e)
         {
